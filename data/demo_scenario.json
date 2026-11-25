@@ -1,0 +1,20 @@
+{
+  "note": "SIMULATED reports for demonstration. Not real incident data.",
+  "zones": [
+    {"name": "Village 9", "lat": 20.27, "lon": 85.84},
+    {"name": "School 4", "lat": 20.30, "lon": 85.90},
+    {"name": "Ward 12", "lat": 20.35, "lon": 85.95}
+  ],
+  "steps": [
+    {"minutes_before": 0, "text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "citizen"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is accessible, vehicles can pass", "category": "road", "lat": 20.27, "lon": 85.84, "source": "forwarded message"},
+    {"text": "Road to Village 9 is submerged, water knee deep", "category": "road", "lat": 20.27, "lon": 85.84, "source": "field responder"},
+    {"text": "Rescue needed: 4 people trapped near Village 9 bridge", "category": "rescue", "lat": 20.2705, "lon": 85.8405, "source": "volunteer"},
+    {"text": "School 4 shelter at 60 percent capacity, 20 spaces left", "category": "shelter", "lat": 20.30, "lon": 85.90, "source": "field responder"}
+  ]
+}

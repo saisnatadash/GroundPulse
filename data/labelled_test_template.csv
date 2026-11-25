@@ -1,0 +1,2 @@
+report_id,received_time,source_type,source_id,text,voice_transcript_ref,photo_ref,lat,lon,location_accuracy_m,category,claimed_condition,forward_chain_id,true_incident_id,label_duplicate_of,label_contradicts,label_stale,label_notes,labeller_id,label_date
+EXAMPLE-000,YYYY-MM-DD HH:MM,citizen,anon-001,"[EXAMPLE ONLY - replace with real labelled report]",,,0.0,0.0,50,road,accessible,,INC-EXAMPLE,,,,"Template row. Do not use as test data.",L-01,YYYY-MM-DD

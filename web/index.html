@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>GroundPulse Prototype</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f1f5f9;color:#0f172a}
+header{background:#0b1f3a;color:#fff;padding:12px 20px}header p{margin:4px 0 0;color:#5eead4;font-size:13px}
+.wrap{display:grid;grid-template-columns:330px 1fr;gap:14px;padding:14px}
+.panel{background:#fff;border-radius:8px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:12px}
+h2{font-size:15px;margin:0 0 8px;color:#0b1f3a}
+input,select,textarea{width:100%;padding:6px;margin:3px 0 8px;border:1px solid #cbd5e1;border-radius:5px;box-sizing:border-box;font-size:14px}
+button{background:#0e7c66;color:#fff;border:0;padding:7px 10px;border-radius:5px;cursor:pointer;margin:2px 3px 2px 0;font-size:13px}
+button.alt{background:#0b1f3a}button.warn{background:#d97706}button.red{background:#dc2626}
+.kpis{display:flex;gap:8px;margin-bottom:12px}.kpi{flex:1;background:#fff;border-radius:6px;padding:8px;border:1px solid #e2e8f0}
+.kpi b{font-size:22px;color:#0b1f3a;display:block}.kpi span{font-size:12px;color:#64748b}
+.inc{border:1px solid #e2e8f0;border-left:6px solid #64748b;border-radius:6px;padding:8px;margin-bottom:8px;font-size:13px}
+.supported{border-left-color:#0e7c66}.contradicted{border-left-color:#dc2626}.stale{border-left-color:#d97706}.verified{border-left-color:#0b1f3a}.rejected{border-left-color:#94a3b8}
+.chip{font-size:11px;font-weight:bold;padding:2px 7px;border-radius:10px;color:#fff;background:#64748b}
+.small{font-size:12px;color:#475569}.log{font-family:monospace;font-size:12px;background:#0f172a;color:#e2e8f0;padding:8px;border-radius:6px;max-height:220px;overflow:auto;white-space:pre-wrap}
+.q{background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px;margin-bottom:6px;font-size:13px}
+</style></head><body>
+<header><h1 style="margin:0;font-size:20px">GroundPulse Prototype</h1><p>Rule-based evidence engine. Not AI yet. No automatic dispatch.</p></header>
+<div class="wrap">
+<div>
+ <div class="panel"><h2>1. Submit a field report</h2>
+  <label class="small">Report text</label><textarea id="txt" rows="3"></textarea>
+  <label class="small">Category</label><select id="cat"><option>road</option><option>rescue</option><option>shelter</option><option>bridge</option></select>
+  <label class="small">Latitude, longitude</label><input id="loc" value="20.27,85.84">
+  <label class="small">Source</label><select id="src"><option>citizen</option><option>volunteer</option><option>field responder</option><option>forwarded message</option></select>
+  <button onclick="submit()">Submit</button>
+  <button class="alt" onclick="post('/api/demo')">Load demo</button>
+  <button class="warn" onclick="post('/api/reset')">Reset</button>
+  <button class="alt" onclick="tick()">+10 min</button>
+ </div>
+ <div class="panel"><h2>2. Verification queue (human decides)</h2><div id="queue" class="small">Empty.</div></div>
+</div>
+<div>
+ <div class="kpis" id="kpis"></div>
+ <div class="panel"><h2>3. Incidents, ranked by priority, with reasons</h2><div id="incidents" class="small"></div></div>
+ <div class="panel"><h2>4. Zones (no recent report is never treated as safe)</h2><div id="zones" class="small"></div></div>
+ <div class="panel"><h2>5. Audit log</h2><div id="log" class="log"></div></div>
+</div>
+</div>
+<script>
+const OP = "demo-operator"; // placeholder identity, no login in prototype
+async function post(url, body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!r.ok)alert(j.error||'error');refresh();}
+async function submit(){const t=document.getElementById('txt').value.trim();if(!t)return alert('Enter report text');const [lat,lon]=document.getElementById('loc').value.split(',').map(Number);
+ await post('/api/report',{text:t,category:document.getElementById('cat').value,lat,lon,source:document.getElementById('src').value});document.getElementById('txt').value='';}
+function tick(){post('/api/advance',{minutes:10});}
+function verify(id,d){post('/api/verify',{incident_id:id,decision:d,operator:OP});}
+function resolve(q,a){post('/api/resolve',{qid:q,attach:a,operator:OP});}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function refresh(){const s=await (await fetch('/api/state')).json();
+ document.getElementById('kpis').innerHTML=[['Open incidents',s.kpis.open_incidents],['Reports',s.kpis.reports],['Forwards collapsed',s.kpis.forwards_collapsed],['Contradicted',s.kpis.contradicted]].map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('');
+ document.getElementById('incidents').innerHTML=s.incidents.length?s.incidents.map(i=>`<div class="inc ${i.state}"><b>INC-${i.id} ${esc(i.category)}</b> <span class="chip">${esc(i.state.toUpperCase())}</span> <span class="small">decision: ${esc(i.status)}</span>
+ <div>Latest: "${esc(i.text)}"</div>
+ <div class="small">Independent: <b>${i.independent}</b> | Forwards collapsed: <b>${i.forwards}</b> | Credibility: <b>${i.credibility}</b> | Priority: <b>${i.priority}</b> | Age: ${i.age} min</div>
+ ${i.conflict?`<div style="color:#dc2626">Conflict: ${esc(i.conflict)}</div>`:''}
+ <div class="small">Why: ${esc(i.reasons.join('; '))}</div>
+ ${i.status==='open'?`<button onclick="verify(${i.id},'confirm')">Confirm on ground</button><button class="red" onclick="verify(${i.id},'reject')">Reject</button>`:''}</div>`).join(''):'No incidents yet. Load the demo.';
+ document.getElementById('queue').innerHTML=s.queue.length?s.queue.map(q=>`<div class="q">${q.report_id} (score ${q.score}) for INC-${q.incident_id}: "${esc(q.text)}"<br><button onclick="resolve(${q.qid},true)">Attach</button><button class="alt" onclick="resolve(${q.qid},false)">Open new</button></div>`).join(''):'Empty.';
+ document.getElementById('zones').innerHTML=s.zones.map(z=>`<div>${esc(z.name)}: ${esc(z.status)}</div>`).join('');
+ document.getElementById('log').textContent=s.audit.map(a=>`T+${a.t} [${a.actor}] ${a.action}: ${a.detail}`).join('\n')||'[log empty]';
+}
+refresh(); setInterval(refresh,3000);
+</script></body></html>
